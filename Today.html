@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>To_XiaoXun</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* * { box-sizing: border-box; margin: 0; padding: 0; position: relative; } */
+        html, body { height: 100%; overflow: hidden; font-family: "Microsoft YaHei", "楷体", sans-serif; }
+        
+		body{
+			background: #000;
+		}
+        /* 深邃星空背景 */
+        /* body { background: radial-gradient(ellipse at bottom, #1b2735 0%, #020111 100%); } */
+		.countdown-bg { background: radial-gradient(ellipse at bottom, #1b2735 0%, #020111 100%); }
+
+        #star-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 0; pointer-events: none; }
+        .star { position: absolute; background: #fff; border-radius: 50%; animation: twinkle infinite alternate; }
+        @keyframes twinkle { 
+            0% { opacity: 0.2; transform: scale(0.8); box-shadow: 0 0 2px rgba(255,255,255,0.1); } 
+            100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px rgba(255,255,255,0.8); } 
+        }
+        
+        .screen { position: absolute; top:0; left:0; width:100%; height:100%; display:none; flex-direction:column; justify-content:center; align-items:center; z-index:10; background: transparent; }
+
+        /* 倒计时 UI */
+        #countdown-title { font-size: 3.0rem; font-weight: bold; color: #ffb6c1; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        #countdown-time { font-size: 2.2rem; color: #ffb6c1; margin-top: 15px; text-shadow: 0 0 20px rgba(255,182,193,0.9); font-weight: bold; text-align: center; line-height: 1.5; letter-spacing: 1px;}
+        
+        /* 进入按钮 UI */
+        #enter-btn { 
+            padding: 15px 45px; font-size: 1.5rem; background: rgba(255,182,193,0.1); color: #ffb6c1; 
+            border: 2px solid #ffb6c1; border-radius: 40px; cursor: pointer; transition: all 0.4s ease; 
+            box-shadow: 0 0 15px rgba(255,182,193,0.4); letter-spacing: 2px; backdrop-filter: blur(5px);
+        }
+        #enter-btn:hover { background: rgba(255,182,193,0.3); box-shadow: 0 0 30px rgba(255,182,193,0.9); transform: scale(1.05); }
+        #enter-btn:active { transform: scale(0.95); }
+        
+        /* 烟花与画布 */
+        #fireworks-screen { display: none; z-index: 5; }
+        .canvas-container { width: 100%; height: 100%; position: absolute; top:0; left:0; }
+        .canvas-container canvas { position: absolute; mix-blend-mode: lighten; transform: translateZ(0); }
+        .canvas-container { display: none; }
+		
+        /* 文字区域：完全居中 */
+        .type_words { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 90%; text-align: center; z-index: 500; font-size: 1.4rem; line-height: 2.5rem; color: #ffebcd; text-shadow: 1px 1px 6px rgba(0,0,0,0.9), 0 0 10px rgba(255,235,205,0.5); }
+        
+        /* 交互提示 */
+        #interactive-tip { position: absolute; bottom: 12%; width: 100%; text-align: center; color: rgba(255,255,255,0.8); font-size: 1.1rem; letter-spacing: 2px; animation: pulse 2s infinite; z-index: 1000; pointer-events: none; text-shadow: 0 0 8px rgba(255,255,255,0.5); display: none; }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
+		
+		/* 结尾彩蛋 UI  */
+		#terminal-tip {
+		    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+		    background: rgba(10, 10, 20, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+		    padding: 30px 35px; border-radius: 15px; border: 1px solid rgba(255, 182, 193, 0.4);
+		    width: 85%; max-width: 450px; box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+		    z-index: 2000; display: none; text-align: left;
+		}
+		#terminal-content p {
+		    color: #ffb6c1; font-size: 1.1rem; line-height: 1.8; margin-bottom: 10px;
+		    text-shadow: 0 0 5px rgba(255,182,193,0.5); font-family: "Microsoft YaHei", sans-serif;
+		    transition: opacity 0.3s;
+		}
+		/* 字体跳动：单独指定最后一行金色的样式 */
+		/* #terminal-content p.final-line { 
+		    color: #ffd700; font-size: 1.3rem; font-weight: bold; margin-top: 20px; text-shadow: 0 0 10px rgba(255,215,0,0.8); 
+		} */
+		.cursor-blink { display: inline-block; width: 8px; height: 18px; background-color: #ffb6c1; vertical-align: middle; animation: blink 1s step-end infinite; margin-left: 5px; }
+		@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div id="star-bg"></div>
+
+    <div id="countdown-screen" class="screen coutdown-bg">
+        <div id="countdown-title">【倒计时】</div>
+        <div id="countdown-time"></div>
+		<div style="position: absolute; bottom: 30px;left: 50%;transform: translateX(-50%); letter-spacing: 2px; word-spacing: 5px; color: rgba(255, 255, 255, 0.2);"> waiting is part of life </div>
+    </div>
+    <div id="enter-screen" class="screen coutdown-bg">
+        <button id="enter-btn">Open</button>
+    </div>
+
+    <div id="fireworks-screen" class="screen coutdown-bg" style="width: 100%; height: 100%;">
+        <div class="type_words" id="contents"></div>		
+		<div id="terminal-tip">
+		    <div id="terminal-content"></div>
+		</div>
+		
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="trails-canvas"></canvas>
+            <canvas id="main-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // === 核心参数区 =======================
+        // ==========================================
+        
+        // 【第一部分：祝福语与文字动画参数】
+        const GREETING_TEXT = [
+            "亲爱的：",
+            "✨祝你生日快乐✨",
+            "✨希望你的每一天都像烟花一样绚烂✨",
+            "✨愿你所期皆所念，所念皆所愿✨",
+            "✨平安喜乐，岁岁无忧✨"
+        ];
+        const WAIT_BEFORE_FALL = 2500;  // 停留几毫秒开始掉落 (5000 = 5秒)
+        const FALL_SPEED = 5000;        // 掉落消失的过程时间 (2500 = 2.5秒)
+        const LINE_DELAY = 1500;        // 每行相隔多久开始掉落 (1000 = 1秒)
+        
+        // 【第二部分：烟花节奏与数量参数】
+        const FINALE_COUNT = 10;       // 爆发总发数 (100发)
+        const FINALE_DURATION = 2000;   // 爆发持续时间 (2.5秒)
+        
+        const START_RATE = 20;          // 爆发刚结束时，每秒发射数量 (30发/秒)
+        const END_RATE = 3;            // 最终平息后，每秒发射数量 (10发/秒)
+        const DECAY_DURATION = 20000;   // 线性减少经历的时间 (10秒)
+
+        // 内部引擎状态变量
+        let isAutoLaunchEnabled = false; 
+        let decayTimer = 0;              
+        let shellsToLaunch = 0;  
+		let isFireworksActive = false
+
+        // ==========================================
+        // === 星空背景渲染 ===
+        // ==========================================
+        function createStars() {
+            const starBg = document.getElementById('star-bg');
+            for(let i = 0; i < 100; i++) {
+                let star = document.createElement('div');
+                star.className = 'star';
+                let size = Math.random() * 2.5 + 0.5;
+                star.style.width = size + 'px'; star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%'; star.style.top = Math.random() * 100 + '%';
+                star.style.animationDuration = Math.random() * 2 + 1.5 + 's';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starBg.appendChild(star);
+            }
+        }
+        createStars();
+
+        // ==========================================
+        // === 日期判断与流程控制 ===
+        // ==========================================
+        $(document).ready(function() {
+            function checkDate() {
+                const now = new Date();
+                let targetYear = now.getFullYear();
+                let targetDate = new Date(targetYear, 3, 24); // 3代表4月
+                const isBirthday = (now.getMonth() === 3 && now.getDate() === 24);
+
+                if (true) {
+                    $('#enter-screen').css('display', 'flex');
+                } else {
+                    if (now > targetDate) targetDate = new Date(targetYear + 1, 3, 24);
+                    $('#countdown-screen').css('display', 'flex');
+                    startCountdown(targetDate);
+                }
+            }
+
+            function startCountdown(target) {
+                setInterval(() => {
+                    const diff = target - new Date();
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((diff / 1000 / 60) % 60);
+                    const seconds = Math.floor((diff / 1000) % 60);
+                    $('#countdown-time').html(`${days} 天 <br/> ${hours} 小时 ${minutes} 分钟 ${seconds} 秒`);
+                }, 1000);
+            }
+
+            $('#enter-btn').click(function() {
+                $('#enter-screen').fadeOut(600, function() {
+                    $('#fireworks-screen').fadeIn(800);
+                    soundManager.resumeAll();
+                    startFireworks(); 
+                    setTimeout(startTyping, 500); 
+                });
+            });
+
+            soundManager.preload();
+            checkDate();
+        });
+
+        // ==========================================
+        // === 文字打字与碎片掉落逻辑 ===
+        // ==========================================
+        function startTyping() {
+            let container = document.getElementById('contents');
+            container.innerHTML = '';
+            
+            let lineIdx = 0;
+            let charIdx = 0;
+            let linesDOM = [];
+
+            let timer = setInterval(() => {
+                if (lineIdx >= GREETING_TEXT.length) {
+                    clearInterval(timer);
+                    // 打字完成，等待后开始掉落
+                    setTimeout(() => startFalling(linesDOM), WAIT_BEFORE_FALL);
+                    return;
+                }
+
+                // 创建每一行的div容器
+                if (!linesDOM[lineIdx]) {
+                    let lineDiv = document.createElement('div');
+                    container.appendChild(lineDiv);
+                    linesDOM.push({ div: lineDiv, chars: [] });
+                }
+
+                let text = GREETING_TEXT[lineIdx];
+                if (charIdx < text.length) {
+                    // 将每个文字包装成 span
+                    let charSpan = document.createElement('span');
+                    charSpan.className = 'char';
+                    charSpan.innerHTML = text[charIdx] === ' ' ? '&nbsp;' : text[charIdx];
+                    charSpan.style.display = 'inline-block';
+                    charSpan.style.transition = `transform ${FALL_SPEED/1000}s ease-in, opacity ${FALL_SPEED/1000}s ease-in`;
+                    linesDOM[lineIdx].div.appendChild(charSpan);
+                    linesDOM[lineIdx].chars.push(charSpan);
+                    charIdx++;
+                } else {
+                    lineIdx++;
+                    charIdx = 0;
+                }
+            }, 200); 
+        }
+
+        function startFalling(linesDOM) {
+            let totalChars = 0;
+            let fallenChars = 0;
+        
+            // 统计总字数
+            linesDOM.forEach(line => {
+                totalChars += line.chars.length;
+            });
+        
+            let delay = 0;
+        
+            linesDOM.forEach((lineObj) => {
+                lineObj.chars.forEach((charSpan) => {
+        
+                    setTimeout(() => {
+                        // 每个字单独掉落
+                        const tx = (Math.random() - 0.5) * 600;  // 左右随机
+                        const ty = window.innerHeight + 200;     // 掉出屏幕
+                        const rot = (Math.random() - 0.5) * 720; // 旋转
+        
+                        charSpan.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg)`;
+                        charSpan.style.opacity = '0';
+        
+                        // 统计掉落完成数量
+                        fallenChars++;
+        
+                        // 所有字掉完 → 触发烟花高潮
+                        if (fallenChars === totalChars) {
+                            setTimeout(() => {
+                                $('#contents').hide();
+                                launchGrandFinale();
+                            }, FALL_SPEED);
+                        }
+        
+                    }, delay);
+        
+                    //  控制逐字节奏（这里可以调）
+                    delay += 300;         
+                });
+            });
+        }
+		
+		// 结尾菜单
+				// 结尾菜单
+				function showEndingCreative() {
+				    const terminal = $('#terminal-tip');
+				    terminal.fadeIn(800);
+				    
+				    const lines = [
+				        "> 嘀！结束喽 ૮( '⏖' )ა",
+				        "> 本次共为您绽放了 365 朵专属星火 ✨",
+				        "> 烟花虽已结束...",
+				        "> 但【好运与快乐】已为你续费一整年👉(V我50)",
+				        "> 再次祝你生日快乐，永远有期待！",
+						"> 撒花 🎉 🎉 🎉 " 
+				    ];
+				    
+				    let container = document.getElementById('terminal-content');
+				    let lineIdx = 0;
+		
+		            // ★ 音效：红轴机械键盘
+		            function playTypeSound() {
+		                try {
+		                    const ctx = soundManager.ctx;
+		                    if (!ctx || ctx.state !== 'running') return;
+		            
+		                    const now = ctx.currentTime;
+		                    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+		                    const output = noiseBuffer.getChannelData(0);
+		            
+		                    for (let i = 0; i < output.length; i++) {
+		                        // 白噪声 + 轻微衰减（更像塑料敲击）
+		                        output[i] = (Math.random() * 2 - 1) * (1 - i / output.length);
+		                    }
+		            
+		                    const noise = ctx.createBufferSource();
+		                    noise.buffer = noiseBuffer;
+		            
+		                    const noiseFilter = ctx.createBiquadFilter();
+		                    noiseFilter.type = 'bandpass';
+		                    noiseFilter.frequency.value = 1800 + Math.random() * 400; // 中高频敲击感
+		                    noiseFilter.Q.value = 0.8;
+		            
+		                    const noiseGain = ctx.createGain();
+		                    noiseGain.gain.setValueAtTime(0.12, now);
+		                    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+		            
+		                    noise.connect(noiseFilter);
+		                    noiseFilter.connect(noiseGain);
+		                    noiseGain.connect(ctx.destination);
+		            
+		                    noise.start(now);
+		                    noise.stop(now + 0.06);
+		                    const osc = ctx.createOscillator();
+		                    osc.type = 'sine';
+		                    osc.frequency.setValueAtTime(90 + Math.random() * 30, now);
+		            
+		                    const oscGain = ctx.createGain();
+		                    oscGain.gain.setValueAtTime(0.04, now);
+		                    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+		            
+		                    osc.connect(oscGain);
+		                    oscGain.connect(ctx.destination);
+		            
+		                    osc.start(now);
+		                    osc.stop(now + 0.09);
+		            
+		                } catch (e) {}
+		            }
+					
+				    
+					function typeLine() {
+						if(lineIdx >= lines.length) {
+							container.innerHTML += '<span class="cursor-blink"></span>';
+							return;
+						}
+						
+						let p = document.createElement('p');
+						if (lineIdx === lines.length - 1) {
+							p.className = 'final-line';
+						}
+						container.appendChild(p);
+						
+						let text = lines[lineIdx];
+						let charIdx = 0;
+						
+						// 核心：使用递归的 setTimeout 替代 setInterval，实现动态变速
+						function typeNextChar() {
+							if(charIdx < text.length) {
+								p.innerHTML += text[charIdx];
+								let currentChar = text[charIdx]; // 获取当前打出的字符
+								charIdx++;
+								playTypeSound(); // 触发键盘声
+								
+								// 1. 基础随机打字速度：在 40ms 到 140ms 之间波动
+								let delay = 100 + Math.random() * 50;
+								
+								// 2. 标点符号停顿：遇到标点或空格，额外思考停顿 100~200ms
+								if (['，', '。', '！', '？', ' ', '>', '૮'].includes(currentChar)) {
+									delay += 100 + Math.random() * 100;
+								}
+		
+								setTimeout(typeNextChar, delay);
+							} else {
+								// 一行打完，准备换行
+								lineIdx++;
+								setTimeout(typeLine, 800);
+							}
+						}
+						
+						typeNextChar(); // 启动打字
+					}
+
+
+
+				    typeLine();
+				}
+ 
+		
+		
+        // ==========================================
+        // === 烟花引擎控制中心 ===
+        // ==========================================
+        
+        function launchGrandFinale() {
+			isFireworksActive = true
+			$('#canvas-container').fadeIn(800)
+            // 1. 爆发阶段
+            for(let i=0; i<FINALE_COUNT; i++) {
+                setTimeout(() => {
+                    new Shell(randomShell(Math.random() * 2 + 1)).launch(
+                        Math.random() * 0.8 + 0.1, 
+                        Math.random() * 0.5 + 0.4
+                    );
+                }, Math.random() * FINALE_DURATION); 
+            }
+        
+            // 2. 爆发结束 → 开始自动烟花
+            setTimeout(() => {
+                isAutoLaunchEnabled = true; 
+                decayTimer = 0;
+        
+                //  10秒后停止烟花
+                setTimeout(() => {
+                    isAutoLaunchEnabled = false;
+        
+                    //再等3.5秒出结尾彩蛋
+                    setTimeout(() => {
+                        showEndingCreative();
+                    }, 8000);
+        
+                }, 30000);
+        
+            }, FINALE_DURATION);
+        }
+
+        // 下面是底层烟花计算引擎
+        const MyMath = {
+            toDeg: 180 / Math.PI, toRad: Math.PI / 180, halfPI: Math.PI / 2, twoPI: Math.PI * 2,
+            pointDist: (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2),
+            pointAngle: (x1, y1, x2, y2) => (Math.PI / 2 + Math.atan2(y2 - y1, x2 - x1)),
+            random: (min, max) => Math.random() * (max - min) + min,
+            randomChoice: function(choices) { return arguments.length === 1 && Array.isArray(choices) ? choices[(Math.random() * choices.length) | 0] : arguments[(Math.random() * arguments.length) | 0]; },
+            clamp: function(num, min, max) { return Math.min(Math.max(num, min), max); }
+        };
+
+        const Ticker = (function() {
+            let started = false, lastTimestamp = 0, listeners = [];
+            function queueFrame() { requestAnimationFrame(frameHandler); }
+            function frameHandler(timestamp) {
+                let frameTime = timestamp - lastTimestamp; lastTimestamp = timestamp;
+                if (frameTime < 0) frameTime = 17; else if (frameTime > 68) frameTime = 68;
+                listeners.forEach(listener => listener(frameTime, frameTime / 16.6667)); queueFrame();
+            }
+            return { addListener: function(callback) { listeners.push(callback); if (!started) { started = true; queueFrame(); } } };
+        })();
+
+        const Stage = (function() {
+            function Stage(canvas) {
+                if (typeof canvas === 'string') canvas = document.getElementById(canvas);
+                this.canvas = canvas; this.ctx = canvas.getContext('2d');
+                this.canvas.style.touchAction = 'none';
+                this.dpr = (window.devicePixelRatio || 1) / (this.ctx.backingStorePixelRatio || 1);
+                this.width = canvas.width; this.height = canvas.height;
+                this.naturalWidth = this.width * this.dpr; this.naturalHeight = this.height * this.dpr;
+                Stage.stages.push(this);
+                this._listeners = { pointerstart: [], pointermove: [], pointerend: [] };
+            }
+            Stage.stages = [];
+            Stage.prototype.addEventListener = function(event, handler) { if (event === 'ticker') Ticker.addListener(handler); else this._listeners[event].push(handler); };
+            Stage.prototype.dispatchEvent = function(event, val) { if (this._listeners[event]) this._listeners[event].forEach(l => l.call(this, val)); };
+            Stage.prototype.resize = function(w, h) {
+                this.width = w; this.height = h; this.naturalWidth = w * this.dpr; this.naturalHeight = h * this.dpr;
+                this.canvas.width = this.naturalWidth; this.canvas.height = this.naturalHeight;
+                this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+            };
+            Stage.windowToCanvas = function(canvas, x, y) { const bbox = canvas.getBoundingClientRect(); return { x: (x - bbox.left) * (canvas.width / bbox.width), y: (y - bbox.top) * (canvas.height / bbox.height) }; };
+            Stage.touchHandler = function(evt) {
+                let type = evt.type.includes('move') ? 'move' : evt.type.includes('end') ? 'end' : 'start';
+                Stage.stages.forEach(stage => {
+                    let clientX = evt.clientX || (evt.changedTouches && evt.changedTouches[0].clientX);
+                    let clientY = evt.clientY || (evt.changedTouches && evt.changedTouches[0].clientY);
+                    if(clientX && clientY) {
+                        const pos = Stage.windowToCanvas(stage.canvas, clientX, clientY);
+                        stage.pointerEvent(type, pos.x / stage.dpr, pos.y / stage.dpr);
+                    }
+                });
+            };
+            Stage.prototype.pointerEvent = function(type, x, y) { this.dispatchEvent('pointer' + type, { type: type, x: x, y: y, onCanvas: true }); };
+            document.addEventListener('mousedown', Stage.touchHandler); document.addEventListener('mousemove', Stage.touchHandler); document.addEventListener('mouseup', Stage.touchHandler);
+            document.addEventListener('touchstart', Stage.touchHandler, {passive: false}); document.addEventListener('touchmove', Stage.touchHandler, {passive: false}); document.addEventListener('touchend', Stage.touchHandler, {passive: false});
+            return Stage;
+        })();
+
+        const soundManager = {
+            baseURL: 'https://res.wx.qq.com/voice/getvoice?mediaid=', ctx: null, 
+            sources: {
+                lift: { volume: 1, playbackRateMin: 0.85, playbackRateMax: 0.95, fileNames: ['Mzk0MzcwNDA5OF8xMDAwMDAwMzk=', 'Mzk0MzcwNDA5OF8xMDAwMDAwNDA=', 'Mzk0MzcwNDA5OF8xMDAwMDAwNDE='] },
+                burst: { volume: 1, playbackRateMin: 0.8, playbackRateMax: 0.9, fileNames: ['Mzk0MzcwNDA5OF8xMDAwMDAwNDI=', 'Mzk0MzcwNDA5OF8xMDAwMDAwNDM='] },
+                burstSmall: { volume: 0.25, playbackRateMin: 0.8, playbackRateMax: 1, fileNames: ['Mzk0MzcwNDA5OF8xMDAwMDAwNDQ=', 'Mzk0MzcwNDA5OF8xMDAwMDAwNDU='] },
+                crackle: { volume: 0.2, playbackRateMin: 1, playbackRateMax: 1, fileNames: ['Mzk0MzcwNDA5OF8xMDAwMDAwNDY='] },
+                crackleSmall: { volume: 0.3, playbackRateMin: 1, playbackRateMax: 1, fileNames: ['Mzk0MzcwNDA5OF8xMDAwMDAwNDc='] }
+            },
+            preload() {
+                const AudioContext = window.AudioContext || window.webkitAudioContext; this.ctx = new AudioContext(); 
+                const allFilePromises = [];
+                Object.keys(this.sources).forEach(type => {
+                    const source = this.sources[type];
+                    const filePromises = source.fileNames.map(fileName => fetch(this.baseURL + fileName).then(res => res.arrayBuffer()).then(data => new Promise(resolve => this.ctx.decodeAudioData(data, resolve))));
+                    Promise.all(filePromises).then(buffers => source.buffers = buffers); allFilePromises.push(...filePromises);
+                }); return Promise.all(allFilePromises);
+            },
+            resumeAll() { if (this.ctx.state === 'suspended') this.ctx.resume(); },
+            playSound(type, scale = 1) {
+                if(!this.ctx) return;
+                const source = this.sources[type]; if (!source || !source.buffers || !source.buffers.length) return;
+                const gainNode = this.ctx.createGain(); gainNode.gain.value = source.volume * scale;
+                const bufferSource = this.ctx.createBufferSource();
+                bufferSource.playbackRate.value = MyMath.random(source.playbackRateMin, source.playbackRateMax) * (2 - scale);
+                bufferSource.buffer = MyMath.randomChoice(source.buffers);
+                bufferSource.connect(gainNode); gainNode.connect(this.ctx.destination); bufferSource.start(0);
+            }
+        };
+
+        let randomShell; 
+        function startFireworks() {
+            const MAX_WIDTH = 7680, MAX_HEIGHT = 4320, GRAVITY = 0.9, PI_2 = Math.PI * 2;
+            let simSpeed = 1, stageW, stageH, currentFrame = 0;
+            const config = { size: 3, skyLighting: 2, scaleFactor: window.innerWidth <= 640 ? 0.9 : 1 };
+            
+            const COLOR = { Red: '#ff0043', Green: '#14fc56', Blue: '#1e7fff', Purple: '#e60aff', Gold: '#ffbf36', White: '#ffffff' };
+            const INVISIBLE = '_INVISIBLE_'; const COLOR_CODES = Object.values(COLOR); const COLOR_CODES_W_INVIS = [...COLOR_CODES, INVISIBLE];
+            const COLOR_TUPLES = {}; COLOR_CODES.forEach(hex => { COLOR_TUPLES[hex] = { r: parseInt(hex.substr(1, 2), 16), g: parseInt(hex.substr(3, 2), 16), b: parseInt(hex.substr(5, 2), 16) }; });
+
+            const trailsStage = new Stage('trails-canvas'), mainStage = new Stage('main-canvas');
+
+            function rColor(opt) { let c = COLOR_CODES[(Math.random() * COLOR_CODES.length) | 0]; if (opt && opt.limitWhite && c === COLOR.White && Math.random() < 0.6) c = COLOR_CODES[(Math.random() * COLOR_CODES.length) | 0]; return c; }
+            function wOg() { return Math.random() < 0.5 ? COLOR.Gold : COLOR.White; }
+            function mPc(sc) { return (sc === COLOR.White || sc === COLOR.Gold) ? rColor({notColor: sc}) : wOg(); }
+
+            const shellTypes = {
+                'Crackle': (s) => ({ shellSize: s, spreadSize: 380 + s * 75, starDensity: 1, starLife: 600 + s * 100, starLifeVariation: 0.32, glitter: 'light', glitterColor: COLOR.Gold, color: Math.random() < 0.75 ? COLOR.Gold : rColor(), crackle: true, pistil: Math.random() < 0.65, pistilColor: mPc(COLOR.Gold) }),
+                'Crossette': (s) => ({ shellSize: s, spreadSize: 300 + s * 100, starLife: 750 + s * 160, starLifeVariation: 0.4, starDensity: 0.85, color: rColor({limitWhite: true}), crossette: true, pistil: Math.random() < 0.5, pistilColor: mPc(rColor()) }),
+                'Crysanthemum': (s) => { const g = Math.random() < 0.25, c = Math.random() < 0.72 ? rColor({limitWhite: true}) : [rColor(), rColor()]; const p = Math.random() < 0.42; return { shellSize: s, spreadSize: 300 + s * 100, starLife: 900 + s * 200, starDensity: g ? 1.1 : 1.25, color: c, glitter: g ? 'light' : '', glitterColor: wOg(), pistil: p, pistilColor: p && mPc(c) }; },
+                'Ring': (s) => { const c = rColor(), p = Math.random() < 0.75; return { shellSize: s, ring: true, color: c, spreadSize: 300 + s * 100, starLife: 900 + s * 200, starCount: 2.2 * PI_2 * (s + 1), pistil: p, pistilColor: mPc(c), glitter: !p ? 'light' : '', glitterColor: c === COLOR.Gold ? COLOR.Gold : COLOR.White }; }
+            };
+            randomShell = (size) => shellTypes[Object.keys(shellTypes)[(Math.random() * Object.keys(shellTypes).length) | 0]](size);
+
+            function createCollection() { const c = {}; COLOR_CODES_W_INVIS.forEach(clr => c[clr] = []); return c; }
+            const BurstFlash = { active: [], _pool: [], _new() { return {} }, add(x, y, radius) { const i = this._pool.pop() || this._new(); i.x = x; i.y = y; i.radius = radius; this.active.push(i); return i; }, returnInstance(i) { this._pool.push(i); } };
+            const Spark = { drawWidth: 1.5, airDrag: 0.9, active: createCollection(), _pool: [], _new() { return {}; }, add(x, y, color, angle, speed, life) { const i = this._pool.pop() || this._new(); i.x = x; i.y = y; i.prevX = x; i.prevY = y; i.color = color; i.speedX = Math.sin(angle) * speed; i.speedY = Math.cos(angle) * speed; i.life = life; this.active[color].push(i); return i; }, returnInstance(i) { this._pool.push(i); } };
+            const Star = { drawWidth: 3, airDrag: 0.98, airDragHeavy: 0.992, active: createCollection(), _pool: [], _new() { return {}; }, add(x, y, color, angle, speed, life, speedOffX, speedOffY) { const i = this._pool.pop() || this._new(); i.visible = true; i.heavy = false; i.x = x; i.y = y; i.prevX = x; i.prevY = y; i.color = color; i.speedX = Math.sin(angle) * speed + (speedOffX || 0); i.speedY = Math.cos(angle) * speed + (speedOffY || 0); i.life = life; i.fullLife = life; i.spinAngle = Math.random() * PI_2; i.spinSpeed = 0.8; i.spinRadius = 0; i.sparkFreq = 0; i.sparkSpeed = 1; i.sparkTimer = 0; i.sparkColor = color; i.sparkLife = 750; i.sparkLifeVariation = 0.25; i.strobe = false; this.active[color].push(i); return i; }, returnInstance(i) { i.onDeath && i.onDeath(i); i.onDeath = null; i.secondColor = null; i.transitionTime = 0; i.colorChanged = false; this._pool.push(i); } };
+
+            function createParticleArc(start, arcLength, count, randomness, particleFactory) {
+                const angleDelta = arcLength / count, end = start + arcLength - (angleDelta * 0.5);
+                if (end > start) { for (let angle = start; angle < end; angle = angle + angleDelta) particleFactory(angle + Math.random() * angleDelta * randomness); } 
+                else { for (let angle = start; angle > end; angle = angle + angleDelta) particleFactory(angle + Math.random() * angleDelta * randomness); }
+            }
+            function createBurst(count, particleFactory, startAngle = 0, arcLength = PI_2) {
+                const R = 0.5 * Math.sqrt(count / Math.PI), C = 2 * R * Math.PI, C_HALF = C / 2;
+                for (let i = 0; i <= C_HALF; i++) {
+                    const ringAngle = i / C_HALF * MyMath.halfPI, ringSize = Math.cos(ringAngle);
+                    const partsPerArc = C * ringSize * (arcLength / PI_2);
+                    const angleInc = PI_2 / (C * ringSize), angleOffset = Math.random() * angleInc + startAngle;
+                    for (let j = 0; j < partsPerArc; j++) particleFactory(angleInc * j + angleOffset + Math.random() * angleInc * 0.33, ringSize);
+                }
+            }
+
+            class Shell {
+                constructor(options) {
+                    Object.assign(this, options);
+                    this.starLifeVariation = options.starLifeVariation || 0.125; this.color = options.color || rColor(); this.glitterColor = options.glitterColor || this.color;
+                    if (!this.starCount) this.starCount = Math.max(6, (this.spreadSize / 54) ** 2 * (options.starDensity || 1));
+                }
+                launch(position, launchHeight) {
+                    const width = stageW, height = stageH, hpad = 60, vpad = 50, minHeight = height - height * 0.45;
+                    const launchX = position * (width - hpad * 2) + hpad, launchY = height;
+                    const burstY = minHeight - (launchHeight * (minHeight - vpad)), launchVelocity = Math.pow((launchY - burstY) * 0.04, 0.64);
+                    const comet = this.comet = Star.add(launchX, launchY, typeof this.color === 'string' && this.color !== 'random' ? this.color : COLOR.White, Math.PI, launchVelocity, launchVelocity * 400);
+                    comet.heavy = true; comet.spinRadius = MyMath.random(0.32, 0.85); comet.sparkFreq = 16; comet.sparkLife = 320; comet.sparkLifeVariation = 3;
+                    if (Math.random() > 0.4) { comet.secondColor = INVISIBLE; comet.transitionTime = Math.pow(Math.random(), 1.5) * 700 + 500; }
+                    comet.onDeath = comet => this.burst(comet.x, comet.y);
+                    soundManager.playSound('lift');
+                }
+                burst(x, y) {
+                    const speed = this.spreadSize / 96;
+                    let color, onDeath, sparkFreq, sparkSpeed, sparkLife, sparkLifeVariation = 0.25, playedDeathSound = false;
+                    if (this.crossette) onDeath = (star) => { if (!playedDeathSound) { soundManager.playSound('crackleSmall'); playedDeathSound = true; } createParticleArc(Math.random() * MyMath.halfPI, PI_2, 4, 0.5, (angle) => { Star.add(star.x, star.y, star.color, angle, Math.random() * 0.6 + 0.75, 600); }); }
+                    if (this.crackle) onDeath = (star) => { if (!playedDeathSound) { soundManager.playSound('crackle'); playedDeathSound = true; } createParticleArc(0, PI_2, 32, 1.8, (angle) => { Spark.add(star.x, star.y, COLOR.Gold, angle, Math.pow(Math.random(), 0.45) * 2.4, 300 + Math.random() * 200); }); }
+
+                    if (this.glitter === 'light') { sparkFreq = 200; sparkSpeed = 0.3; sparkLife = 300; sparkLifeVariation = 2; } 
+                    else if (this.glitter === 'medium') { sparkFreq = 100; sparkSpeed = 0.44; sparkLife = 700; sparkLifeVariation = 2; }
+
+                    const starFactory = (angle, speedMult) => {
+                        const standardInitialSpeed = this.spreadSize / 1800;
+                        const star = Star.add(x, y, color || rColor(), angle, speedMult * speed, this.starLife + Math.random() * this.starLife * this.starLifeVariation, this.comet && this.comet.speedX, this.comet && this.comet.speedY - standardInitialSpeed);
+                        if (this.secondColor) { star.transitionTime = this.starLife * (Math.random() * 0.05 + 0.32); star.secondColor = this.secondColor; }
+                        star.onDeath = onDeath;
+                        if (this.glitter) { star.sparkFreq = sparkFreq; star.sparkSpeed = sparkSpeed; star.sparkLife = sparkLife; star.sparkLifeVariation = sparkLifeVariation; star.sparkColor = this.glitterColor; star.sparkTimer = Math.random() * star.sparkFreq; }
+                    };
+
+                    if (typeof this.color === 'string') {
+                        color = this.color === 'random' ? null : this.color;
+                        if (this.ring) {
+                            const ringStartAngle = Math.random() * Math.PI, ringSquash = Math.pow(Math.random(), 2) * 0.85 + 0.15;
+                            createParticleArc(0, PI_2, this.starCount, 0, angle => {
+                                const initSpeedX = Math.sin(angle) * speed * ringSquash, initSpeedY = Math.cos(angle) * speed;
+                                const newSpeed = MyMath.pointDist(0, 0, initSpeedX, initSpeedY), newAngle = MyMath.pointAngle(0, 0, initSpeedX, initSpeedY) + ringStartAngle;
+                                const star = Star.add(x, y, color, newAngle, newSpeed, this.starLife + Math.random() * this.starLife * this.starLifeVariation);
+                                if (this.glitter) { star.sparkFreq = sparkFreq; star.sparkSpeed = sparkSpeed; star.sparkLife = sparkLife; star.sparkLifeVariation = sparkLifeVariation; star.sparkColor = this.glitterColor; star.sparkTimer = Math.random() * star.sparkFreq; }
+                            });
+                        } else createBurst(this.starCount, starFactory);
+                    } else if (Array.isArray(this.color)) {
+                        color = this.color[0]; createBurst(this.starCount / 2, starFactory);
+                        color = this.color[1]; createBurst(this.starCount / 2, starFactory);
+                    }
+                    if (this.pistil) { new Shell({ spreadSize: this.spreadSize * 0.5, starLife: this.starLife * 0.6, starLifeVariation: this.starLifeVariation, starDensity: 1.4, color: this.pistilColor, glitter: 'light', glitterColor: this.pistilColor === COLOR.Gold ? COLOR.Gold : COLOR.White }).burst(x, y); }
+                    BurstFlash.add(x, y, this.spreadSize / 4);
+                    if (this.comet) soundManager.playSound('burst', 0.85);
+                }
+            }
+            window.Shell = Shell; 
+
+            // mainStage.addEventListener('pointermove', (event) => {
+            //     if(event.onCanvas && isAutoLaunchEnabled) {
+            //         for(let i=0; i<2; i++) {
+            //             Spark.add(event.x, event.y, COLOR.Gold, Math.random() * Math.PI * 2, Math.random() * 2.5, 400 + Math.random() * 200);
+            //         }
+            //     }
+            // });
+
+            // mainStage.addEventListener('pointerstart', (event) => {
+            //     $('#interactive-tip').fadeOut(); // 点击隐藏提示语
+            //     if(event.onCanvas) {
+            //         new Shell(randomShell(config.size)).launch(event.x / mainStage.width, 1 - event.y / mainStage.height);
+            //     }
+            // });
+
+            function handleResize() {
+                const w = window.innerWidth, h = window.innerHeight;
+                const containerW = Math.min(w, MAX_WIDTH), containerH = Math.min(h, MAX_HEIGHT);
+                $('#canvas-container').css({width: containerW + 'px', height: containerH + 'px'});
+                trailsStage.resize(containerW, containerH); mainStage.resize(containerW, containerH);
+                stageW = containerW / config.scaleFactor; stageH = containerH / config.scaleFactor;
+            }
+            handleResize(); window.addEventListener('resize', handleResize);
+
+            const currentSkyColor = { r: 0, g: 0, b: 0 }, targetSkyColor = { r: 0, g: 0, b: 0 };
+            function colorSky(speed) {
+                const maxSkySaturation = config.skyLighting * 15, maxStarCount = 500;
+                let totalStarCount = 0; targetSkyColor.r = 0; targetSkyColor.g = 0; targetSkyColor.b = 0;
+                COLOR_CODES.forEach(color => {
+                    const count = Star.active[color].length; totalStarCount += count;
+                    targetSkyColor.r += COLOR_TUPLES[color].r * count; targetSkyColor.g += COLOR_TUPLES[color].g * count; targetSkyColor.b += COLOR_TUPLES[color].b * count;
+                });
+                const intensity = Math.pow(Math.min(1, totalStarCount / maxStarCount), 0.3);
+                const maxColorComponent = Math.max(1, targetSkyColor.r, targetSkyColor.g, targetSkyColor.b);
+                targetSkyColor.r = targetSkyColor.r / maxColorComponent * maxSkySaturation * intensity; targetSkyColor.g = targetSkyColor.g / maxColorComponent * maxSkySaturation * intensity; targetSkyColor.b = targetSkyColor.b / maxColorComponent * maxSkySaturation * intensity;
+                const colorChange = 10;
+                currentSkyColor.r += (targetSkyColor.r - currentSkyColor.r) / colorChange * speed; currentSkyColor.g += (targetSkyColor.g - currentSkyColor.g) / colorChange * speed; currentSkyColor.b += (targetSkyColor.b - currentSkyColor.b) / colorChange * speed;
+                if (isFireworksActive) {
+                    $('#canvas-container').css(
+                        'background-color',
+                        `rgba(${currentSkyColor.r | 0}, ${currentSkyColor.g | 0}, ${currentSkyColor.b | 0}, 0.6)`
+                    );
+                } else {
+                    $('#canvas-container').css('background-color', 'transparent');
+                }
+            }
+
+            function update(frameTime, lag) {
+                const timeStep = frameTime * simSpeed, speed = simSpeed * lag;
+                currentFrame++;
+                
+                // ==========================================
+                // === 烟花线性衰减算法核心 ===
+                // ==========================================
+                if (isAutoLaunchEnabled) {
+                    decayTimer += timeStep;
+                    let currentRate; // 当前要求每秒发射多少发
+                    
+                    if (decayTimer >= DECAY_DURATION) {
+                        currentRate = END_RATE; // 到达平息阶段
+                    } else {
+                        // 根据流逝时间，线性插值计算当前的发射速率
+                        let progress = decayTimer / DECAY_DURATION;
+                        currentRate = START_RATE - (START_RATE - END_RATE) * progress;
+                    }
+                    
+                    // 利用帧时间（timeStep毫秒）来累加应该发射的烟花数量
+                    // currentRate 是 每秒(1000ms) 的发射量，所以乘以 (timeStep/1000)
+                    shellsToLaunch += currentRate * (timeStep / 1000);
+                    
+                    // 当累加量 >= 1 时，代表此时需要发射烟花
+                    while (shellsToLaunch >= 1) {
+                        new Shell(randomShell(config.size)).launch(Math.random() * 0.8 + 0.1, Math.random() * 0.6 + 0.3);
+                        shellsToLaunch -= 1; // 扣除已发射数量
+                    }
+                }
+
+                const starDrag = 1 - (1 - Star.airDrag) * speed, starDragHeavy = 1 - (1 - Star.airDragHeavy) * speed, sparkDrag = 1 - (1 - Spark.airDrag) * speed, gAcc = timeStep / 1000 * GRAVITY;
+                COLOR_CODES_W_INVIS.forEach(color => {
+                    const stars = Star.active[color];
+                    for (let i = stars.length - 1; i >= 0; i--) {
+                        const star = stars[i]; if (star.updateFrame === currentFrame) continue;
+                        star.updateFrame = currentFrame; star.life -= timeStep;
+                        if (star.life <= 0) { stars.splice(i, 1); Star.returnInstance(star); } 
+                        else {
+                            const burnRate = Math.pow(star.life / star.fullLife, 0.5), burnRateInverse = 1 - burnRate;
+                            star.prevX = star.x; star.prevY = star.y; star.x += star.speedX * speed; star.y += star.speedY * speed;
+                            if (!star.heavy) { star.speedX *= starDrag; star.speedY *= starDrag; } else { star.speedX *= starDragHeavy; star.speedY *= starDragHeavy; }
+                            star.speedY += gAcc;
+                            if (star.spinRadius) { star.spinAngle += star.spinSpeed * speed; star.x += Math.sin(star.spinAngle) * star.spinRadius * speed; star.y += Math.cos(star.spinAngle) * star.spinRadius * speed; }
+                            if (star.sparkFreq) {
+                                star.sparkTimer -= timeStep;
+                                while (star.sparkTimer < 0) {
+                                    star.sparkTimer += star.sparkFreq * 0.75 + star.sparkFreq * burnRateInverse * 4;
+                                    Spark.add(star.x, star.y, star.sparkColor, Math.random() * PI_2, Math.random() * star.sparkSpeed * burnRate, star.sparkLife * 0.8 + Math.random() * star.sparkLifeVariation * star.sparkLife);
+                                }
+                            }
+                            if (star.life < star.transitionTime) {
+                                if (star.secondColor && !star.colorChanged) { star.colorChanged = true; star.color = star.secondColor; stars.splice(i, 1); Star.active[star.secondColor].push(star); if (star.secondColor === INVISIBLE) star.sparkFreq = 0; }
+                                if (star.strobe) star.visible = Math.floor(star.life / star.strobeFreq) % 3 === 0;
+                            }
+                        }
+                    }
+                    const sparks = Spark.active[color];
+                    for (let i = sparks.length - 1; i >= 0; i--) {
+                        const spark = sparks[i]; spark.life -= timeStep;
+                        if (spark.life <= 0) { sparks.splice(i, 1); Spark.returnInstance(spark); } 
+                        else { spark.prevX = spark.x; spark.prevY = spark.y; spark.x += spark.speedX * speed; spark.y += spark.speedY * speed; spark.speedX *= sparkDrag; spark.speedY *= sparkDrag; spark.speedY += gAcc; }
+                    }
+                });
+                render(speed);
+            }
+
+            function render(speed) {
+                const dpr = mainStage.dpr, width = stageW, height = stageH;
+                const trailsCtx = trailsStage.ctx, mainCtx = mainStage.ctx;
+                colorSky(speed);
+                trailsCtx.scale(dpr * config.scaleFactor, dpr * config.scaleFactor); mainCtx.scale(dpr * config.scaleFactor, dpr * config.scaleFactor);
+                trailsCtx.globalCompositeOperation = 'source-over';
+                trailsCtx.fillStyle = `rgba(0, 0, 0, ${0.175 * speed})`; trailsCtx.fillRect(0, 0, width, height);
+                mainCtx.clearRect(0, 0, width, height);
+
+                while (BurstFlash.active.length) {
+                    const bf = BurstFlash.active.pop();
+                    const burstGradient = trailsCtx.createRadialGradient(bf.x, bf.y, 0, bf.x, bf.y, bf.radius);
+                    burstGradient.addColorStop(0.024, 'rgba(255, 255, 255, 1)'); burstGradient.addColorStop(0.125, 'rgba(255, 160, 20, 0.2)'); burstGradient.addColorStop(0.32, 'rgba(255, 140, 20, 0.11)'); burstGradient.addColorStop(1, 'rgba(255, 120, 20, 0)');
+                    trailsCtx.fillStyle = burstGradient; trailsCtx.fillRect(bf.x - bf.radius, bf.y - bf.radius, bf.radius * 2, bf.radius * 2);
+                    BurstFlash.returnInstance(bf);
+                }
+                trailsCtx.globalCompositeOperation = 'lighten';
+                trailsCtx.lineWidth = Star.drawWidth; trailsCtx.lineCap = 'round';
+                mainCtx.strokeStyle = '#fff'; mainCtx.lineWidth = 1; mainCtx.beginPath();
+                COLOR_CODES.forEach(color => {
+                    const stars = Star.active[color]; trailsCtx.strokeStyle = color; trailsCtx.beginPath();
+                    stars.forEach(star => { if (star.visible) { trailsCtx.moveTo(star.x, star.y); trailsCtx.lineTo(star.prevX, star.prevY); mainCtx.moveTo(star.x, star.y); mainCtx.lineTo(star.x - star.speedX * 1.6, star.y - star.speedY * 1.6); } });
+                    trailsCtx.stroke();
+                });
+                mainCtx.stroke();
+                trailsCtx.lineWidth = Spark.drawWidth; trailsCtx.lineCap = 'butt';
+                COLOR_CODES.forEach(color => {
+                    const sparks = Spark.active[color]; trailsCtx.strokeStyle = color; trailsCtx.beginPath();
+                    sparks.forEach(spark => { trailsCtx.moveTo(spark.x, spark.y); trailsCtx.lineTo(spark.prevX, spark.prevY); });
+                    trailsCtx.stroke();
+                });
+                trailsCtx.setTransform(1, 0, 0, 1, 0, 0); mainCtx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+            mainStage.addEventListener('ticker', update);
+        }
+    </script>
+</body>
+</html>
