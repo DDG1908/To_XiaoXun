@@ -191,45 +191,81 @@
         // ==========================================
         // === 文字打字与碎片掉落逻辑 ===
         // ==========================================
+        
         function startTyping() {
             let container = document.getElementById('contents');
             container.innerHTML = '';
-            
+        
             let lineIdx = 0;
             let charIdx = 0;
             let linesDOM = [];
-
-            let timer = setInterval(() => {
+        
+            function typeNext() {
+        
+                // ✅ 全部打完
                 if (lineIdx >= GREETING_TEXT.length) {
-                    clearInterval(timer);
-                    // 打字完成，等待后开始掉落
                     setTimeout(() => startFalling(linesDOM), WAIT_BEFORE_FALL);
                     return;
                 }
-
-                // 创建每一行的div容器
+        
+                // ✅ 创建新行
                 if (!linesDOM[lineIdx]) {
                     let lineDiv = document.createElement('div');
                     container.appendChild(lineDiv);
                     linesDOM.push({ div: lineDiv, chars: [] });
                 }
-
+        
                 let text = GREETING_TEXT[lineIdx];
+        
+                // ✅ 逐字打
                 if (charIdx < text.length) {
-                    // 将每个文字包装成 span
+        
+                    let char = text[charIdx];
+        
                     let charSpan = document.createElement('span');
                     charSpan.className = 'char';
-                    charSpan.innerHTML = text[charIdx] === ' ' ? '&nbsp;' : text[charIdx];
+                    charSpan.innerHTML = char === ' ' ? '&nbsp;' : char;
                     charSpan.style.display = 'inline-block';
                     charSpan.style.transition = `transform ${FALL_SPEED/1000}s ease-in, opacity ${FALL_SPEED/1000}s ease-in`;
+        
                     linesDOM[lineIdx].div.appendChild(charSpan);
                     linesDOM[lineIdx].chars.push(charSpan);
+        
+                    // 🔊 打字音效（你前面已经加过）
+                    playTypeSound();
+        
                     charIdx++;
+        
+                    // =========================
+                    // ⭐ 核心：人类打字节奏
+                    // =========================
+        
+                    // 1️⃣ 基础随机速度（手速波动）
+                    let delay = 60 + Math.random() * 120;
+        
+                    // 2️⃣ 标点停顿（思考感）
+                    if (['，','。','！','？','✨','：'].includes(char)) {
+                        delay += 150 + Math.random() * 150;
+                    }
+        
+                    // 3️⃣ 换行前停顿（像人换句子）
+                    if (charIdx === text.length) {
+                        delay += 300;
+                    }
+        
+                    setTimeout(typeNext, delay);
+        
                 } else {
+                    // ✅ 换下一行
                     lineIdx++;
                     charIdx = 0;
+        
+                    setTimeout(typeNext, 200);
                 }
-            }, 200); 
+            }
+        
+            // 🚀 启动打字
+            typeNext();
         }
 
         function startFalling(linesDOM) {
@@ -292,55 +328,6 @@
 				    let container = document.getElementById('terminal-content');
 				    let lineIdx = 0;
 		
-		            // ★ 音效：红轴机械键盘
-		            function playTypeSound() {
-		                try {
-		                    const ctx = soundManager.ctx;
-		                    if (!ctx || ctx.state !== 'running') return;
-		            
-		                    const now = ctx.currentTime;
-		                    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
-		                    const output = noiseBuffer.getChannelData(0);
-		            
-		                    for (let i = 0; i < output.length; i++) {
-		                        // 白噪声 + 轻微衰减（更像塑料敲击）
-		                        output[i] = (Math.random() * 2 - 1) * (1 - i / output.length);
-		                    }
-		            
-		                    const noise = ctx.createBufferSource();
-		                    noise.buffer = noiseBuffer;
-		            
-		                    const noiseFilter = ctx.createBiquadFilter();
-		                    noiseFilter.type = 'bandpass';
-		                    noiseFilter.frequency.value = 1800 + Math.random() * 400; // 中高频敲击感
-		                    noiseFilter.Q.value = 0.8;
-		            
-		                    const noiseGain = ctx.createGain();
-		                    noiseGain.gain.setValueAtTime(0.12, now);
-		                    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-		            
-		                    noise.connect(noiseFilter);
-		                    noiseFilter.connect(noiseGain);
-		                    noiseGain.connect(ctx.destination);
-		            
-		                    noise.start(now);
-		                    noise.stop(now + 0.06);
-		                    const osc = ctx.createOscillator();
-		                    osc.type = 'sine';
-		                    osc.frequency.setValueAtTime(90 + Math.random() * 30, now);
-		            
-		                    const oscGain = ctx.createGain();
-		                    oscGain.gain.setValueAtTime(0.04, now);
-		                    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-		            
-		                    osc.connect(oscGain);
-		                    oscGain.connect(ctx.destination);
-		            
-		                    osc.start(now);
-		                    osc.stop(now + 0.09);
-		            
-		                } catch (e) {}
-		            }
 					
 				    
 					function typeLine() {
@@ -373,7 +360,10 @@
 								if (['，', '。', '！', '？', ' ', '>', '૮'].includes(currentChar)) {
 									delay += 100 + Math.random() * 100;
 								}
-		
+								if (currentChar === "V") {
+									delay += 2500
+									soundManager.playSound('burstSmall', 0.5)
+								}
 								setTimeout(typeNextChar, delay);
 							} else {
 								// 一行打完，准备换行
@@ -389,7 +379,56 @@
 
 				    typeLine();
 				}
- 
+				
+				// ★ 音效：红轴机械键盘
+				function playTypeSound() {
+				    try {
+				        const ctx = soundManager.ctx;
+				        if (!ctx || ctx.state !== 'running') return;
+				
+				        const now = ctx.currentTime;
+				        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+				        const output = noiseBuffer.getChannelData(0);
+				
+				        for (let i = 0; i < output.length; i++) {
+				            // 白噪声 + 轻微衰减（更像塑料敲击）
+				            output[i] = (Math.random() * 2 - 1) * (1 - i / output.length);
+				        }
+				
+				        const noise = ctx.createBufferSource();
+				        noise.buffer = noiseBuffer;
+				
+				        const noiseFilter = ctx.createBiquadFilter();
+				        noiseFilter.type = 'bandpass';
+				        noiseFilter.frequency.value = 1800 + Math.random() * 400; // 中高频敲击感
+				        noiseFilter.Q.value = 0.8;
+				
+				        const noiseGain = ctx.createGain();
+				        noiseGain.gain.setValueAtTime(0.12, now);
+				        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+				
+				        noise.connect(noiseFilter);
+				        noiseFilter.connect(noiseGain);
+				        noiseGain.connect(ctx.destination);
+				
+				        noise.start(now);
+				        noise.stop(now + 0.06);
+				        const osc = ctx.createOscillator();
+				        osc.type = 'sine';
+				        osc.frequency.setValueAtTime(90 + Math.random() * 30, now);
+				
+				        const oscGain = ctx.createGain();
+				        oscGain.gain.setValueAtTime(0.04, now);
+				        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+				
+				        osc.connect(oscGain);
+				        oscGain.connect(ctx.destination);
+				
+				        osc.start(now);
+				        osc.stop(now + 0.09);
+				
+				    } catch (e) {}
+				}
 		
 		
         // ==========================================
@@ -421,9 +460,9 @@
                     //再等3.5秒出结尾彩蛋
                     setTimeout(() => {
                         showEndingCreative();
-                    }, 7000);
+                    }, 6000);
         
-                }, 27000);
+                }, 26000);
         
             }, FINALE_DURATION);
         }
