@@ -155,7 +155,7 @@
                 let targetDate = new Date(targetYear, 3, 24); // 3代表4月
                 const isBirthday = (now.getMonth() === 3 && now.getDate() === 24);
 
-                if (isBirthday) {
+                if (true) {
                     $('#enter-screen').css('display', 'flex');
                 } else {
                     if (now > targetDate) targetDate = new Date(targetYear + 1, 3, 24);
@@ -231,24 +231,24 @@
                     linesDOM[lineIdx].div.appendChild(charSpan);
                     linesDOM[lineIdx].chars.push(charSpan);
         
-                    // 🔊 打字音效（你前面已经加过）
+                    // 🔊 打字音效
                     playTypeSound();
         
                     charIdx++;
         
                     // =========================
-                    // ⭐ 核心：人类打字节奏
+                    // ⭐ 核心：打字节奏
                     // =========================
         
-                    // 1️⃣ 基础随机速度（手速波动）
+                    // 1️ 基础随机速度（手速波动）
                     let delay = 60 + Math.random() * 120;
         
-                    // 2️⃣ 标点停顿（思考感）
+                    // 2️ 标点停顿（思考感）
                     if (['，','。','！','？','✨','：'].includes(char)) {
                         delay += 150 + Math.random() * 150;
                     }
         
-                    // 3️⃣ 换行前停顿（像人换句子）
+                    //  换行前停顿
                     if (charIdx === text.length) {
                         delay += 300;
                     }
@@ -319,8 +319,10 @@
 				    const lines = [
 				        "> 嘀！结束喽 ૮( '⏖' )ა",
 				        "> 本次共为您绽放了 365 朵专属星火 ✨",
-				        "> 烟花虽已结束...",
-				        "> 但好运与快乐已为你续费一整年👉(V我50)",
+				        "> 烟花已结束...",
+				        "> 正在为你续费接下来一年的好运与快乐",
+						"> 进度加载中：██████████ 100%",
+						"> 续费完成（V我50😌）",
 				        "> 再次祝你生日快乐，永远有期待！",
 						"> 撒花 🎉 🎉 🎉 " 
 				    ];
@@ -351,7 +353,10 @@
 								p.innerHTML += text[charIdx];
 								let currentChar = text[charIdx]; // 获取当前打出的字符
 								charIdx++;
-								playTypeSound(); // 触发键盘声
+
+								if (lineTdx !== 4) {
+									playTypeSound(); // 触发键盘声
+								}
 								
 								// 1. 基础随机打字速度：在 40ms 到 140ms 之间波动
 								let delay = 100 + Math.random() * 50;
@@ -362,7 +367,7 @@
 								}
 								if (currentChar === "V") {
 									delay += 2500
-									soundManager.playSound('burstSmall', 0.5)
+									// soundManager.playSound('burstSmall', 0.5)
 								}
 								setTimeout(typeNextChar, delay);
 							} else {
@@ -380,7 +385,7 @@
 				    typeLine();
 				}
 				
-				// ★ 音效：红轴机械键盘
+				//  音效：红轴机械键盘
 				function playTypeSound() {
 				    try {
 				        const ctx = soundManager.ctx;
@@ -391,7 +396,7 @@
 				        const output = noiseBuffer.getChannelData(0);
 				
 				        for (let i = 0; i < output.length; i++) {
-				            // 白噪声 + 轻微衰减（更像塑料敲击）
+				            // 白噪声 + 轻微衰减
 				            output[i] = (Math.random() * 2 - 1) * (1 - i / output.length);
 				        }
 				
@@ -467,7 +472,7 @@
             }, FINALE_DURATION);
         }
 
-        // 下面是底层烟花计算引擎
+        // 底层烟花计算引擎
         const MyMath = {
             toDeg: 180 / Math.PI, toRad: Math.PI / 180, halfPI: Math.PI / 2, twoPI: Math.PI * 2,
             pointDist: (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2),
