@@ -155,7 +155,7 @@
                 let targetDate = new Date(targetYear, 3, 24); // 3代表4月
                 const isBirthday = (now.getMonth() === 3 && now.getDate() === 24);
 
-                if (true) {
+                if (isBirthday) {
                     $('#enter-screen').css('display', 'flex');
                 } else {
                     if (now > targetDate) targetDate = new Date(targetYear + 1, 3, 24);
